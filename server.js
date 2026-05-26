@@ -133,11 +133,8 @@ const server = createServer((req, res) => {
   createReadStream(filePath).pipe(res);
 });
 
-// Listen on IPv4 and IPv6 (dual-stack)
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Reader server running at http://0.0.0.0:${PORT} (IPv4)`);
+// Listen on dual-stack (IPv4 + IPv6)
+server.listen(PORT, '::', { ipv6Only: false }, () => {
+  console.log(`Reader server running at http://[::]:${PORT} (dual-stack)`);
   console.log(`Library directory: ${LIBRARY}`);
-});
-server.listen(PORT, '::', () => {
-  console.log(`Reader server running at http://[::]:${PORT} (IPv6)`);
 });
