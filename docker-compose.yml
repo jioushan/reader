@@ -1,0 +1,11 @@
+services:
+  reader:
+    build: .
+    ports:
+      - "40102:40102"
+    volumes:
+      - ./library:/app/public/library
+    environment:
+      - PORT=40102
+      - LIBRARY_DIR=/app/public/library
+    restart: unless-stopped

@@ -1,0 +1,18 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server.js .
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
+RUN mkdir -p /app/public/library
+ENV PORT=3000
+ENV LIBRARY_DIR=/app/public/library
+EXPOSE 3000
+CMD ["node", "server.js"]

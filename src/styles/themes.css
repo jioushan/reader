@@ -1,0 +1,72 @@
+/* Light Blue - Default theme, library/archive feel */
+:root, [data-theme="blue"] {
+  --bg: #e8f0f8;
+  --bg-secondary: #dce8f2;
+  --text: #2c3e50;
+  --text-secondary: #5a7a94;
+  --border: #b8cfe0;
+  --accent: #3a7bbf;
+  --accent-hover: #2d6a9e;
+  --shadow: rgba(40, 80, 120, 0.12);
+  --toolbar-bg: #dce8f2;
+  --sidebar-bg: #e2ecf5;
+  --card-bg: #edf4fa;
+  --card-hover: #dce8f2;
+  --input-bg: #edf4fa;
+  --scrollbar: #a0bcd0;
+  --scrollbar-hover: #7aa0b8;
+}
+
+[data-theme="white"] {
+  --bg: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --text: #333333;
+  --text-secondary: #666666;
+  --border: #e0e0e0;
+  --accent: #4a90d9;
+  --accent-hover: #357abd;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --toolbar-bg: #ffffff;
+  --sidebar-bg: #f8f8f8;
+  --card-bg: #ffffff;
+  --card-hover: #f0f0f0;
+  --input-bg: #ffffff;
+  --scrollbar: #cccccc;
+  --scrollbar-hover: #999999;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --bg-secondary: #16213e;
+  --text: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border: #2a2a4a;
+  --accent: #6c8ebf;
+  --accent-hover: #8ab4f8;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --toolbar-bg: #16213e;
+  --sidebar-bg: #1a1a2e;
+  --card-bg: #16213e;
+  --card-hover: #1f2b47;
+  --input-bg: #16213e;
+  --scrollbar: #3a3a5a;
+  --scrollbar-hover: #5a5a7a;
+}
+
+[data-theme="green"] {
+  --bg: #c7edcc;
+  --bg-secondary: #b5dfbb;
+  --text: #2d4a32;
+  --text-secondary: #4a6b50;
+  --border: #a3d4a8;
+  --accent: #4a8b5c;
+  --accent-hover: #3a7a4c;
+  --shadow: rgba(0, 80, 0, 0.1);
+  --toolbar-bg: #b5dfbb;
+  --sidebar-bg: #c0e6c5;
+  --card-bg: #d0f0d5;
+  --card-hover: #c0e6c5;
+  --input-bg: #d0f0d5;
+  --scrollbar: #8bc490;
+  --scrollbar-hover: #6ba870;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "reader",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/generate-manifest.js && vite build",
+    "preview": "vite preview",
+    "serve": "node server.js"
+  },
+  "dependencies": {
+    "epubjs": "^0.3.93",
+    "pdfjs-dist": "^5.7.284",
+    "preact": "^10.29.1"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.5",
+    "vite": "^8.0.12"
+  }
+}
