@@ -1,6 +1,6 @@
 services:
   reader:
-    build: .
+    image: ghcr.io/jioushan/reader:latest
     ports:
       - "40102:40102"
     volumes:
