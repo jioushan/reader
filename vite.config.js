@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [preact()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': 'http://localhost:40102',
     },
   },
 })
