@@ -4,7 +4,7 @@ import { join, extname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 40102;
 const DIST = join(__dirname, 'dist');
 const LIBRARY = process.env.LIBRARY_DIR || join(__dirname, 'public', 'library');
 
@@ -133,7 +133,11 @@ const server = createServer((req, res) => {
   createReadStream(filePath).pipe(res);
 });
 
-server.listen(PORT, () => {
-  console.log(`Reader server running at http://localhost:${PORT}`);
+// Listen on IPv4 and IPv6 (dual-stack)
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Reader server running at http://0.0.0.0:${PORT} (IPv4)`);
   console.log(`Library directory: ${LIBRARY}`);
+});
+server.listen(PORT, '::', () => {
+  console.log(`Reader server running at http://[::]:${PORT} (IPv6)`);
 });
