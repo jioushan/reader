@@ -17,33 +17,51 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
 
     const loadBook = async () => {
       try {
-        let bookData;
+        let book;
         if (file.local) {
-          bookData = url;
+          // Local file (blob URL from upload/import) - use directly
+          book = ePub(url);
         } else {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          bookData = await res.arrayBuffer();
+          // Remote file - fetch as ArrayBuffer for reliability
+          try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.arrayBuffer();
+            if (destroyed) return;
+            book = ePub(data);
+          } catch (fetchErr) {
+            // Fallback: try URL directly
+            if (!destroyed) {
+              book = ePub(url);
+            } else {
+              return;
+            }
+          }
         }
 
-        if (destroyed) return;
-        const book = ePub(bookData);
         bookRef.current = book;
 
         const rendition = book.renderTo(containerRef.current, {
           width: '100%',
           height: '100%',
           spread: 'none',
+          manager: 'continuous',
           flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
         });
         renditionRef.current = rendition;
 
         await book.ready;
         if (destroyed) return;
+
         const nav = await book.loaded.navigation;
         onToc(nav.toc);
+
         const saved = file.local ? null : localStorage.getItem(`reader-epub-loc:${file.name}`);
-        rendition.display(saved || undefined);
+        if (saved) {
+          rendition.display(saved);
+        } else {
+          rendition.display();
+        }
 
         rendition.on('relocated', (location) => {
           if (location?.start) {
@@ -57,7 +75,7 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
       } catch (e) {
         if (!destroyed) {
           console.error('EPUB load error:', e);
-          setError(e.message);
+          setError(e.message || 'Load failed');
         }
       }
     };
@@ -95,7 +113,7 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
   if (error) {
     return (
       <div class="viewer-area" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>
           <p style={{ fontSize: '48px', marginBottom: '16px' }}>&#128214;</p>
           <p>{error}</p>
         </div>
