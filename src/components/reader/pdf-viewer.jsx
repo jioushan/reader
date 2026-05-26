@@ -17,7 +17,11 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
     const loadPdf = async () => {
       try {
         const url = file.url || `/library/${encodeURIComponent(file.name)}`;
-        const doc = await pdfjsLib.getDocument(url).promise;
+        const doc = await pdfjsLib.getDocument({
+          url,
+          cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+          cMapPacked: true,
+        }).promise;
         if (cancelled) return;
         setPdf(doc);
         onTotalPages(doc.numPages);
