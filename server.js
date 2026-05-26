@@ -86,7 +86,7 @@ function scanFiles(dir) {
   return files;
 }
 
-const server = createServer((req, res) => {
+const handler = (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = decodeURIComponent(url.pathname);
 
@@ -131,10 +131,15 @@ const server = createServer((req, res) => {
   const mime = MIME[ext] || 'application/octet-stream';
   res.writeHead(200, { 'Content-Type': mime });
   createReadStream(filePath).pipe(res);
+};
+
+// IPv4 server
+createServer(handler).listen(PORT, '0.0.0.0', () => {
+  console.log(`Reader server running at http://0.0.0.0:${PORT} (IPv4)`);
+  console.log(`Library directory: ${LIBRARY}`);
 });
 
-// Listen on dual-stack (IPv4 + IPv6)
-server.listen(PORT, '::', { ipv6Only: false }, () => {
-  console.log(`Reader server running at http://[::]:${PORT} (dual-stack)`);
-  console.log(`Library directory: ${LIBRARY}`);
+// IPv6 server
+createServer(handler).listen(PORT, '::', () => {
+  console.log(`Reader server running at http://[::]:${PORT} (IPv6)`);
 });
