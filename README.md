@@ -62,7 +62,8 @@ services:
   reader:
     image: ghcr.io/jioushan/reader:latest
     ports:
-      - "40102:40102"
+      - "40102:40102/tcp"
+      - "[::]:40102:40102/tcp"
     volumes:
       - ./library:/app/public/library
     environment:
