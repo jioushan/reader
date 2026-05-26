@@ -2,7 +2,6 @@ import { h, Fragment } from 'preact';
 import { lazy, Suspense } from 'preact/compat';
 import { useState, useCallback, useEffect, useRef } from 'preact/hooks';
 import { BookList } from './components/library/book-list';
-import { IframeViewer } from './components/reader/iframe-viewer';
 import { Toolbar } from './components/reader/toolbar';
 import { Sidebar } from './components/common/sidebar';
 import { ThemeSwitch } from './components/settings/theme-switch';
@@ -282,8 +281,6 @@ export function App() {
     );
   }
 
-  const useIframe = isMobile() && currentFile.type === 'pdf';
-
   return (
     <div class="reader-container">
       <Toolbar
@@ -305,7 +302,7 @@ export function App() {
       />
 
       <Suspense fallback={<div class="viewer-loading"><div class="spinner" /></div>}>
-        {currentFile.type === 'pdf' && !useIframe && (
+        {currentFile.type === 'pdf' && (
           <PdfViewer
             file={currentFile}
             page={page}
@@ -314,10 +311,6 @@ export function App() {
             onPageChange={handlePageChange}
             onTotalPages={setTotalPages}
           />
-        )}
-
-        {currentFile.type === 'pdf' && useIframe && (
-          <IframeViewer file={currentFile} />
         )}
 
         {currentFile.type === 'epub' && (
