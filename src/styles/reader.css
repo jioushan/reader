@@ -56,7 +56,6 @@
 
 .viewer-area {
   flex: 1;
-  min-height: 0;
   overflow: auto;
   display: flex;
   justify-content: center;
@@ -70,7 +69,6 @@
   align-items: center;
   padding: 20px;
   gap: 12px;
-  width: 100%;
 }
 
 .pdf-canvas-wrapper canvas {
@@ -395,15 +393,5 @@
 
   .pdf-canvas-wrapper {
     padding: 8px;
-    width: 100%;
-  }
-
-  .pdf-canvas-wrapper canvas {
-    max-width: 100%;
-    height: auto;
-  }
-
-  .epub-viewer {
-    min-height: 0;
   }
 }

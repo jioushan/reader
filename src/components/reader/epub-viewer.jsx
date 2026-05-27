@@ -12,65 +12,47 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
     if (!containerRef.current) return;
     setError(null);
 
-    let destroyed = false;
-    let book = null;
-    let rendition = null;
-
     const url = file.url || `/library/${encodeURIComponent(file.name)}`;
+    const book = ePub(url);
+    bookRef.current = book;
 
-    const init = async () => {
-      try {
-        book = ePub(url);
-        bookRef.current = book;
+    const rendition = book.renderTo(containerRef.current, {
+      width: '100%',
+      height: '100%',
+      spread: 'none',
+      flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
+    });
+    renditionRef.current = rendition;
 
-        rendition = book.renderTo(containerRef.current, {
-          width: '100%',
-          height: '100%',
-          spread: 'none',
-          flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
-        });
-        renditionRef.current = rendition;
-
-        await book.ready;
-        if (destroyed) return;
-
-        const nav = await book.loaded.navigation;
-        if (destroyed) return;
+    book.ready
+      .then(() => book.loaded.navigation)
+      .then(nav => {
         onToc(nav.toc);
-
         const saved = file.local ? null : localStorage.getItem(`reader-epub-loc:${file.name}`);
         if (saved) {
           rendition.display(saved);
         } else {
           rendition.display();
         }
+      })
+      .catch(e => {
+        console.error('EPUB load error:', e);
+        setError(e.message || 'Failed to load EPUB');
+      });
 
-        rendition.on('relocated', (location) => {
-          if (location?.start) {
-            onLocationChange(
-              location.start.cfi,
-              location.start.displayed?.page,
-              location.start.displayed?.total
-            );
-          }
-        });
-      } catch (e) {
-        if (!destroyed) {
-          console.error('EPUB load error:', e);
-          setError(e.message || 'Failed to load EPUB');
-        }
+    rendition.on('relocated', (location) => {
+      if (location?.start) {
+        onLocationChange(
+          location.start.cfi,
+          location.start.displayed?.page,
+          location.start.displayed?.total
+        );
       }
-    };
-
-    init();
+    });
 
     return () => {
-      destroyed = true;
       renditionRef.current = null;
-      if (book) {
-        book.destroy();
-        bookRef.current = null;
-      }
+      book.destroy();
     };
   }, [file.name, file.url]);
 
