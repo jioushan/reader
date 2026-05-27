@@ -61,7 +61,9 @@ export function App() {
   const openFile = useCallback((file) => {
     const type = file.type || getFileType(file.name);
     if (!type) return;
-    const fileData = { ...file, type };
+    // Clear stale blob URLs from history (no local flag = not from current session)
+    const url = (file.url?.startsWith('blob:') && !file.local) ? undefined : file.url;
+    const fileData = { ...file, type, url };
     setCurrentFile(fileData);
     setPage(1);
     setZoom(1);
@@ -70,7 +72,7 @@ export function App() {
     setBookmarks(getBookmarks(file.name));
 
     // Track in history
-    addHistory({ name: file.name, type, size: file.size, url: file.url });
+    addHistory({ name: file.name, type, size: file.size, url });
 
     const saved = getProgress(file.name);
     if (saved) {

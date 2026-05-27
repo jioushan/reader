@@ -12,47 +12,82 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
     if (!containerRef.current) return;
     setError(null);
 
-    const url = file.url || `/library/${encodeURIComponent(file.name)}`;
-    const book = ePub(url);
-    bookRef.current = book;
+    let destroyed = false;
+    let book = null;
 
-    const rendition = book.renderTo(containerRef.current, {
-      width: '100%',
-      height: '100%',
-      spread: 'none',
-      flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
-    });
-    renditionRef.current = rendition;
+    const loadBook = async () => {
+      try {
+        let arrayBuffer;
+        if (file.url) {
+          const res = await fetch(file.url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          arrayBuffer = await res.arrayBuffer();
+        } else {
+          const url = `/library/${encodeURIComponent(file.name)}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            if (res.status === 404) throw new Error('File not found on server');
+            throw new Error(`HTTP ${res.status}`);
+          }
+          arrayBuffer = await res.arrayBuffer();
+        }
 
-    book.ready
-      .then(() => book.loaded.navigation)
-      .then(nav => {
+        if (destroyed) return;
+        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+          throw new Error('Empty file');
+        }
+
+        book = ePub(arrayBuffer);
+        bookRef.current = book;
+
+        const rendition = book.renderTo(containerRef.current, {
+          width: '100%',
+          height: '100%',
+          spread: 'none',
+          flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
+        });
+        renditionRef.current = rendition;
+
+        await book.ready;
+        if (destroyed) return;
+
+        const nav = await book.loaded.navigation;
+        if (destroyed) return;
         onToc(nav.toc);
+
         const saved = file.local ? null : localStorage.getItem(`reader-epub-loc:${file.name}`);
         if (saved) {
           rendition.display(saved);
         } else {
           rendition.display();
         }
-      })
-      .catch(e => {
-        console.error('EPUB load error:', e);
-        setError(e.message || 'Failed to load EPUB');
-      });
 
-    rendition.on('relocated', (location) => {
-      if (location?.start) {
-        onLocationChange(
-          location.start.cfi,
-          location.start.displayed?.page,
-          location.start.displayed?.total
-        );
+        rendition.on('relocated', (location) => {
+          if (location?.start) {
+            onLocationChange(
+              location.start.cfi,
+              location.start.displayed?.page,
+              location.start.displayed?.total
+            );
+          }
+        });
+      } catch (e) {
+        if (!destroyed) {
+          console.error('EPUB load error:', e);
+          setError(e.message || 'Failed to load EPUB');
+        }
       }
-    });
+    };
+
+    loadBook();
 
     return () => {
+      destroyed = true;
       renditionRef.current = null;
-      book.destroy();
+      if (book) {
+        book.destroy();
+        bookRef.current = null;
+      }
     };
   }, [file.name, file.url]);
 
@@ -86,8 +121,8 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
   }
 
   return (
-    <div class="viewer-area" style={{ height: '100%' }}>
-      <div ref={containerRef} class="epub-viewer" style={{ height: '100%', width: '100%' }} />
+    <div class="viewer-area">
+      <div ref={containerRef} class="epub-viewer" style={{ minHeight: '0', minWidth: '0' }} />
     </div>
   );
 }

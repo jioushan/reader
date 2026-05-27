@@ -78,7 +78,8 @@
 
 .epub-viewer {
   flex: 1;
-  height: 100%;
+  position: relative;
+  min-height: 0;
 }
 
 .iframe-viewer {

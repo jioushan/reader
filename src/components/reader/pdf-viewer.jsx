@@ -15,22 +15,31 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
     let cancelled = false;
     const loadPdf = async () => {
       try {
-        let source;
+        let arrayBuffer;
         if (file.url) {
-          // Local file (blob URL): fetch as ArrayBuffer because
-          // the pdf.js web worker cannot access blob: URLs
+          // Local file or URL import — always fetch as ArrayBuffer
+          // because the pdf.js web worker cannot access blob: URLs
           const res = await fetch(file.url);
-          if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-          source = { data: await res.arrayBuffer() };
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          arrayBuffer = await res.arrayBuffer();
         } else {
-          // Server file: use URL directly
-          source = { url: `/library/${encodeURIComponent(file.name)}` };
+          // Server file — fetch explicitly for better error messages
+          const url = `/library/${encodeURIComponent(file.name)}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            if (res.status === 404) throw new Error('File not found on server');
+            throw new Error(`HTTP ${res.status}`);
+          }
+          arrayBuffer = await res.arrayBuffer();
         }
 
         if (cancelled) return;
+        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+          throw new Error('Empty file');
+        }
 
         const doc = await pdfjsLib.getDocument({
-          ...source,
+          data: arrayBuffer,
           cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
           cMapPacked: true,
         }).promise;
@@ -69,18 +78,13 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
         const p = await pdf.getPage(page);
         if (cancelled) return;
 
-        const dpr = window.devicePixelRatio || 1;
-        // Scale viewport by dpr for sharp rendering on high-DPI screens
-        const viewport = p.getViewport({ scale: zoom * dpr, rotation });
+        const viewport = p.getViewport({ scale: zoom, rotation });
 
         const canvas = canvasRef.current;
         if (!canvas) return;
 
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        // CSS size = logical pixels (viewport / dpr)
-        canvas.style.width = Math.round(viewport.width / dpr) + 'px';
-        canvas.style.height = Math.round(viewport.height / dpr) + 'px';
 
         const ctx = canvas.getContext('2d');
         const task = p.render({ canvasContext: ctx, viewport });
