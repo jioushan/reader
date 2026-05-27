@@ -12,17 +12,31 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
   const [error, setError] = useState(null);
   const renderTaskRef = useRef(null);
 
+  // Load PDF document
   useEffect(() => {
     let cancelled = false;
     const loadPdf = async () => {
       try {
-        const url = file.url || `/library/${encodeURIComponent(file.name)}`;
-        const loadingTask = pdfjsLib.getDocument({
-          url,
+        let data;
+        if (file.url) {
+          // Local file (blob URL from upload/import) - convert to ArrayBuffer
+          // because pdf.js worker cannot fetch blob URLs cross-origin
+          const res = await fetch(file.url);
+          data = await res.arrayBuffer();
+        } else {
+          // Server file - use URL directly
+          data = `/library/${encodeURIComponent(file.name)}`;
+        }
+
+        if (cancelled) return;
+
+        const doc = await pdfjsLib.getDocument({
+          data: typeof data === 'string' ? undefined : data,
+          url: typeof data === 'string' ? data : undefined,
           cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
           cMapPacked: true,
-        });
-        const doc = await loadingTask.promise;
+        }).promise;
+
         if (cancelled) return;
         setPdf(doc);
         setError(null);
@@ -30,7 +44,7 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
       } catch (e) {
         if (!cancelled) {
           console.error('PDF load error:', e);
-          setError(e.message);
+          setError(e.message || 'Failed to load PDF');
         }
       }
     };
@@ -44,6 +58,7 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
     };
   }, [file.name, file.url]);
 
+  // Render current page
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
     let cancelled = false;
@@ -59,37 +74,29 @@ export function PdfViewer({ file, page, zoom, rotation, onPageChange, onTotalPag
 
         const dpr = window.devicePixelRatio || 1;
         const baseViewport = p.getViewport({ scale: 1, rotation });
-        const container = wrapperRef.current;
-        const maxWidth = container
-          ? container.clientWidth - 16
-          : window.innerWidth - 16;
-        const fitScale = maxWidth / baseViewport.width;
+
+        // Calculate scale to fit wrapper width
+        const wrapper = wrapperRef.current;
+        const containerWidth = wrapper ? wrapper.clientWidth : (window.innerWidth - 40);
+        const fitScale = containerWidth / baseViewport.width;
         const scale = fitScale * zoom;
 
-        // Cap scale so canvas doesn't exceed GPU limits on mobile
-        const maxCanvasWidth = 2048;
-        const rawCanvasWidth = baseViewport.width * scale * dpr;
-        const clampedScale = rawCanvasWidth > maxCanvasWidth
-          ? (maxCanvasWidth / (baseViewport.width * dpr))
-          : scale;
+        const viewport = p.getViewport({ scale, rotation });
 
-        const viewport = p.getViewport({ scale: clampedScale, rotation });
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        canvas.width = Math.floor(viewport.width * dpr);
-        canvas.height = Math.floor(viewport.height * dpr);
-        canvas.style.width = Math.floor(viewport.width) + 'px';
-        canvas.style.height = Math.floor(viewport.height) + 'px';
+        // Canvas internal resolution (high DPI)
+        canvas.width = Math.round(viewport.width * dpr);
+        canvas.height = Math.round(viewport.height * dpr);
+        // Canvas display size (CSS pixels)
+        canvas.style.width = Math.round(viewport.width) + 'px';
+        canvas.style.height = Math.round(viewport.height) + 'px';
 
         const ctx = canvas.getContext('2d');
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        const task = p.render({
-          canvasContext: ctx,
-          viewport,
-          transform: [dpr, 0, 0, dpr, 0, 0],
-        });
+        const task = p.render({ canvasContext: ctx, viewport });
         renderTaskRef.current = task;
         await task.promise;
       } catch (e) {

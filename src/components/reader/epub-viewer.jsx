@@ -13,39 +13,20 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
     setError(null);
 
     let destroyed = false;
+    let book = null;
+    let rendition = null;
+
     const url = file.url || `/library/${encodeURIComponent(file.name)}`;
 
-    const loadBook = async () => {
+    const init = async () => {
       try {
-        let book;
-        if (file.local) {
-          // Local file (blob URL from upload/import) - use directly
-          book = ePub(url);
-        } else {
-          // Remote file - fetch as ArrayBuffer for reliability
-          try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.arrayBuffer();
-            if (destroyed) return;
-            book = ePub(data);
-          } catch (fetchErr) {
-            // Fallback: try URL directly
-            if (!destroyed) {
-              book = ePub(url);
-            } else {
-              return;
-            }
-          }
-        }
-
+        book = ePub(url);
         bookRef.current = book;
 
-        const rendition = book.renderTo(containerRef.current, {
+        rendition = book.renderTo(containerRef.current, {
           width: '100%',
           height: '100%',
           spread: 'none',
-          manager: 'continuous',
           flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
         });
         renditionRef.current = rendition;
@@ -54,6 +35,7 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
         if (destroyed) return;
 
         const nav = await book.loaded.navigation;
+        if (destroyed) return;
         onToc(nav.toc);
 
         const saved = file.local ? null : localStorage.getItem(`reader-epub-loc:${file.name}`);
@@ -75,18 +57,18 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
       } catch (e) {
         if (!destroyed) {
           console.error('EPUB load error:', e);
-          setError(e.message || 'Load failed');
+          setError(e.message || 'Failed to load EPUB');
         }
       }
     };
 
-    loadBook();
+    init();
 
     return () => {
       destroyed = true;
       renditionRef.current = null;
-      if (bookRef.current) {
-        bookRef.current.destroy();
+      if (book) {
+        book.destroy();
         bookRef.current = null;
       }
     };
