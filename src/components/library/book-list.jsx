@@ -116,7 +116,7 @@ export function BookList({ onOpen, onOpenSettings, t }) {
       <div class="library">
         <div class="viewer-loading">
           <div class="spinner" />
-          <span>Loading...</span>
+          <span>{t('library.loading') || 'Loading…'}</span>
         </div>
       </div>
     );

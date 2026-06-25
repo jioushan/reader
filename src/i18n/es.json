@@ -44,5 +44,6 @@
   "reader.scrollMode": "Desplazamiento",
   "reader.pageMode": "Modo página",
   "library.downloading": "Descargando...",
-  "library.importUrl.error": "Error de descarga"
+  "library.importUrl.error": "Error de descarga",
+  "library.loading": "Cargando…"
 }

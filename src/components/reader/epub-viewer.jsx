@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import ePub from 'epubjs';
 
-export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }) {
+export function EpubViewer({ file, onLocationChange, onToc, onRendition, mode = 'paginated' }) {
   const containerRef = useRef(null);
   const bookRef = useRef(null);
   const renditionRef = useRef(null);
@@ -47,6 +47,7 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
           flow: mode === 'paginated' ? 'paginated' : 'scrolled-doc',
         });
         renditionRef.current = rendition;
+        if (onRendition) onRendition(rendition);
 
         await book.ready;
         if (destroyed) return;
@@ -84,6 +85,7 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
     return () => {
       destroyed = true;
       renditionRef.current = null;
+      if (onRendition) onRendition(null);
       if (book) {
         book.destroy();
         bookRef.current = null;
@@ -94,6 +96,7 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
   useEffect(() => {
     if (renditionRef.current) {
       renditionRef.current.flow(mode === 'paginated' ? 'paginated' : 'scrolled-doc');
+      renditionRef.current.resize();
     }
   }, [mode]);
 
@@ -102,6 +105,8 @@ export function EpubViewer({ file, onLocationChange, onToc, mode = 'paginated' }
 
   useEffect(() => {
     const handleKey = (e) => {
+      // Only handle arrow keys when not in fullscreen (fullscreen is handled by app.jsx)
+      if (document.fullscreenElement) return;
       if (e.key === 'ArrowRight') goNext();
       if (e.key === 'ArrowLeft') goPrev();
     };

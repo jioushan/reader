@@ -44,5 +44,6 @@
   "reader.scrollMode": "Scroll Mode",
   "reader.pageMode": "Page Mode",
   "library.downloading": "Downloading...",
-  "library.importUrl.error": "Download failed"
+  "library.importUrl.error": "Download failed",
+  "library.loading": "Loading…"
 }

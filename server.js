@@ -8,6 +8,13 @@ const PORT = process.env.PORT || 40102;
 const DIST = join(__dirname, 'dist');
 const LIBRARY = process.env.LIBRARY_DIR || join(__dirname, 'public', 'library');
 
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+};
+
 const MIME = {
   '.html': 'text/html',
   '.js': 'application/javascript',
@@ -24,6 +31,25 @@ const MIME = {
 };
 
 const ALLOWED = new Set(['.pdf', '.epub']);
+
+// Block private/loopback IPs to prevent SSRF
+function isPrivateHost(hostname) {
+  if (!hostname) return true;
+  // IPv6 loopback
+  if (hostname === '::1' || hostname === '[::1]' || hostname === '0:0:0:0:0:0:0:1') return true;
+  // IPv4 loopback / private ranges
+  const parts = hostname.split('.').map(Number);
+  if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+    if (parts[0] === 127 || parts[0] === 0) return true;                // loopback
+    if (parts[0] === 10) return true;                                     // 10.0.0.0/8
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true; // 172.16.0.0/12
+    if (parts[0] === 192 && parts[1] === 168) return true;                // 192.168.0.0/16
+    if (parts[0] === 169 && parts[1] === 254) return true;               // link-local
+  }
+  // Block common local names
+  if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === 'metadata.google.internal') return true;
+  return false;
+}
 
 // Proxy fetch: bypass browser CORS restrictions
 async function proxyFetch(targetUrl, clientRes) {
@@ -93,7 +119,7 @@ const handler = (req, res) => {
   // API: file list
   if (pathname === '/api/files') {
     const files = scanFiles(LIBRARY);
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', ...SECURITY_HEADERS });
     res.end(JSON.stringify(files));
     return;
   }
@@ -102,8 +128,27 @@ const handler = (req, res) => {
   if (pathname === '/api/proxy') {
     const target = url.searchParams.get('url');
     if (!target) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.writeHead(400, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
       res.end(JSON.stringify({ error: 'Missing url parameter' }));
+      return;
+    }
+    // Validate URL protocol and block SSRF
+    let parsed;
+    try {
+      parsed = new URL(target);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+      res.end(JSON.stringify({ error: 'Invalid URL' }));
+      return;
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      res.writeHead(403, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+      res.end(JSON.stringify({ error: 'Only http/https URLs allowed' }));
+      return;
+    }
+    if (isPrivateHost(parsed.hostname)) {
+      res.writeHead(403, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+      res.end(JSON.stringify({ error: 'Access to private/internal addresses is blocked' }));
       return;
     }
     return proxyFetch(target, res);
@@ -112,10 +157,16 @@ const handler = (req, res) => {
   // Serve library files
   if (pathname.startsWith('/library/')) {
     const filePath = join(LIBRARY, pathname.slice(9));
+    // Prevent path traversal: resolved path must stay within LIBRARY
+    if (!filePath.startsWith(LIBRARY)) {
+      res.writeHead(403, { 'Content-Type': 'application/json', ...SECURITY_HEADERS });
+      res.end(JSON.stringify({ error: 'Forbidden' }));
+      return;
+    }
     if (existsSync(filePath) && statSync(filePath).isFile()) {
       const ext = extname(filePath).toLowerCase();
       const mime = MIME[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': mime });
+      res.writeHead(200, { 'Content-Type': mime, ...SECURITY_HEADERS });
       createReadStream(filePath).pipe(res);
       return;
     }
@@ -129,7 +180,7 @@ const handler = (req, res) => {
 
   const ext = extname(filePath).toLowerCase();
   const mime = MIME[ext] || 'application/octet-stream';
-  res.writeHead(200, { 'Content-Type': mime });
+  res.writeHead(200, { 'Content-Type': mime, ...SECURITY_HEADERS });
   createReadStream(filePath).pipe(res);
 };
 

@@ -37,6 +37,7 @@ export function App() {
   const [epubMode, setEpubMode] = useState('paginated');
   const [showSettings, setShowSettings] = useState(false);
   const [volumeKeyEnabled, setVolumeKeyEnabled] = useState(() => localStorage.getItem('reader-volumekey') === 'true');
+  const epubRenditionRef = useRef(null);
 
   // Fullscreen UI state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -212,7 +213,14 @@ export function App() {
     }
   }, [currentFile]);
 
-  const handleTocClick = useCallback((item) => {}, []);
+  const handleTocClick = useCallback((item) => {
+    if (item.href && epubRenditionRef.current) {
+      epubRenditionRef.current.display(item.href);
+    }
+    if (item.page) {
+      setPage(item.page);
+    }
+  }, []);
 
   const settingsPanel = (
     <div class="settings-panel">
@@ -320,6 +328,7 @@ export function App() {
             file={currentFile}
             onLocationChange={handleEpubLocationChange}
             onToc={setToc}
+            onRendition={(r) => { epubRenditionRef.current = r; }}
             mode={epubMode}
           />
         )}

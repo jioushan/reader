@@ -44,5 +44,6 @@
   "reader.scrollMode": "滚动模式",
   "reader.pageMode": "翻页模式",
   "library.downloading": "下载中...",
-  "library.importUrl.error": "下载失败"
+  "library.importUrl.error": "下载失败",
+  "library.loading": "加载中…"
 }

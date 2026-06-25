@@ -44,5 +44,6 @@
   "reader.scrollMode": "스크롤",
   "reader.pageMode": "페이지 모드",
   "library.downloading": "다운로드 중...",
-  "library.importUrl.error": "다운로드 실패"
+  "library.importUrl.error": "다운로드 실패",
+  "library.loading": "로딩 중…"
 }

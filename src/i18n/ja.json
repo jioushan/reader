@@ -44,5 +44,6 @@
   "reader.scrollMode": "スクロール",
   "reader.pageMode": "ページモード",
   "library.downloading": "ダウンロード中...",
-  "library.importUrl.error": "ダウンロードに失敗しました"
+  "library.importUrl.error": "ダウンロードに失敗しました",
+  "library.loading": "読み込み中…"
 }
